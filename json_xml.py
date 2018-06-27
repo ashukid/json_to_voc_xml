@@ -1,13 +1,15 @@
 import glob 
 import json
 import cv2
-json_folder = 'AIMVAS_HAVC/vehicles/out/'
+import os
+
+# write the folder path for json files here
+json_folder = 'sample_img/sub_images/out/'
 json_files = glob.glob(json_folder+"/*")
 
 
 def make_annotations(data):
-    zind = 0
-    for z in data:
+    for zind in range(len(data)):
         filename = data[zind]["path"]
         basename, file_extension = os.path.splitext(filename)
         f = open(basename + '.xml','w') 
@@ -21,14 +23,16 @@ def make_annotations(data):
         f.write(line)
         line = '\t\t<source>\n\t\t\t<database>Unknown</database>\n\t\t</source>\n'
         f.write(line)
-#         line = '\t<size>\n\t\t<width>'+ str(data[zind]['width']) + '</width>\n\t\t<height>' + str(data[zind]['height']) + '</height>\n\t'
-#         line += '\t<depth>' + str(data[zind]['depth']) + '</depth>\n\t</size>'
-#         f.write(line)
+        line = '\t<size>\n\t\t<width>'+ str(data[zind]['width']) + '</width>\n\t\t<height>' + str(data[zind]['height']) + '</height>\n\t'
+        line += '\t<depth>' + str(data[zind]['depth']) + '</depth>\n\t</size>'
+        f.write(line)
         line = '\n\t<segmented>0</segmented>'
         f.write(line)
         
-        ind = 0
-        for i in data[zind]["annotations"]:
+        total_index = len(data[zind]["annotations"])
+        print(total_index)
+        for ind in range(total_index):
+            i = data[zind]["annotations"][ind]
             line = '\n\t<object>'
             line += '\n\t\t<name>' + i[0] + '</name>\n\t\t<pose>0</pose>'
             line += '\n\t\t<truncated>0</truncated>\n\t\t<difficult>0</difficult>'
@@ -43,13 +47,14 @@ def make_annotations(data):
             line += '\n\t\t</bndbox>'
             line += '\n\t</object>'     
             f.write(line)
-            ind +=1
+            ind += 1
+
         line = "\n<annotation>" + '\n'
         f.write(line)
         f.close()
         zind +=1
 
-        
+
 new_data = []
 for file in json_files:
     
@@ -59,8 +64,8 @@ for file in json_files:
         image_name = data[0]
         folder,_,filename = image_name.split("/")
         path = image_name
-        #path = os.path.join("/bv/naveen/MobileNet_Keras/",image_name)
- 
+#         path = os.path.join("/bv/naveen/MobileNet_Keras/",image_name)
+
         temp_dict['folder'] = folder
         temp_dict['filename'] = filename
         temp_dict['path'] = path
@@ -79,15 +84,25 @@ for file in json_files:
 
                 temp_label = data[i]
                 label = temp_label['label']
+                vehicle = ['bicycle','car','motorcycle','bus','train','truck']
+                animal = ['bird','cat','dog','horse','sheep','cow','elephant','bear','zebra','giraffe']
+                if(label in vehicle):
+                    label='vehicle'
+                elif(label in animal):
+                    label='animal'
+                elif(label=='person'):
+                    label=='person'
+                else:
+                    continue
                 xmin = temp_label['topleft']['x']
                 ymin = temp_label['topleft']['y']
                 xmax = temp_label['bottomright']['x']
                 ymax = temp_label['bottomright']['y']
 
                 temp_dict['annotations'].append([label,xmin,xmax,ymin,ymax])
-            
+                
     new_data.append(temp_dict)
 
 
+# call main function
 make_annotations(new_data)
-
